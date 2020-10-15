@@ -483,5 +483,10 @@ namespace PcmHacking
             J2534Port.Functions.ClearRxBuffer((int)DeviceID);
             J2534Port.Functions.ClearTxBuffer((int)DeviceID);
         }
+
+        public override Task<Response<bool>> SetToListen()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

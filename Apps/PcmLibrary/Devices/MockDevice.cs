@@ -110,5 +110,10 @@ namespace PcmHacking
         {
             this.port.DiscardBuffers();
         }
+
+        public override Task<Response<bool>> SetToListen()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

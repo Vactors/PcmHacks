@@ -362,5 +362,7 @@ namespace PcmHacking
                     throw new NotImplementedException("Unknown timeout scenario " + scenario);
             }
         }
+
+        public abstract Task<Response<bool>> SetToListen();
     }
 }

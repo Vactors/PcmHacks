@@ -15,6 +15,9 @@ namespace PcmHacking
     public partial class PcmExplorerMainForm : MainFormBase
     {
         private TaskScheduler uiThreadScheduler;
+        private bool listenStopRequested;
+        private object listeningLock = new object();
+        private bool listening;
 
         public PcmExplorerMainForm()
         {
@@ -168,6 +171,55 @@ namespace PcmHacking
                 while ((responseMessage = await this.Vehicle.ReceiveMessage()) != null)
                 {
                     this.AddUserMessage("Response: " + responseMessage.GetBytes().ToHex());
+                }
+            }
+        }
+
+        private async void listeningCheckbox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (listeningCheckbox.Checked)
+            {
+                await Vehicle.SetDeviceToListen();
+                lock (listeningLock)
+                {
+                    if (!listening)
+                    {
+                        listening = true;
+                        ThreadPool.QueueUserWorkItem(new WaitCallback(ListeningThread), null);
+                    }
+                }
+            }
+            else
+            {
+                //Set it to stop logging
+                listenStopRequested = true;
+            }
+        }
+
+        private async void ListeningThread(object threadContext)
+        {
+            using (AwayMode lockScreenSuppressor = new AwayMode())
+            {
+                try
+                {
+                    while (!listenStopRequested)
+                    {
+                        var message = await Vehicle.ReceiveMessage();
+                        if (message != null)
+                        {
+                            AddUserMessage("Received message: " + message.ToString());
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    AddDebugMessage(exception.ToString());
+                    AddUserMessage("Listening interrupted. " + exception.Message);
+                }
+                finally
+                {
+                    listenStopRequested = false;
+                    listening = false;
                 }
             }
         }

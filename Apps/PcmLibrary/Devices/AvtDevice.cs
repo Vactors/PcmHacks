@@ -402,5 +402,10 @@ namespace PcmHacking
             this.Port.DiscardBuffers();
             System.Threading.Thread.Sleep(50);
         }
+
+        public override Task<Response<bool>> SetToListen()
+        {
+            throw new NotImplementedException();
+        }
     }    
 }

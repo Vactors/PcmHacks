@@ -518,7 +518,7 @@ namespace PcmHacking
         async private Task<Response<Boolean>> DVISetup()
         {
             //Set filter
-            bool Status = await SetToFilter(DeviceId.Tool);
+            bool Status = await SetToFilter(DeviceId.Tool, true);
             if (Status == false) return Response.Create(ResponseStatus.Error, false);
 
             //Enable network rx/tx for protocol
@@ -537,6 +537,20 @@ namespace PcmHacking
             //  this.Logger.AddDebugMessage("TX: " + message.GetBytes().ToHex());
             await SendDVIPacket(message);
             return true;
+        }
+
+        public override async Task<Response<bool>> SetToListen()
+        {
+            // Remove the filter for messages to return
+            bool status = await SetToFilter(DeviceId.Tool, false);
+            if (status == false)
+            {
+                return Response.Create(ResponseStatus.Refused, false);
+            }
+            else
+            {
+                return Response.Create(ResponseStatus.Success, true);
+            }
         }
 
         /// <summary>
@@ -693,11 +707,11 @@ namespace PcmHacking
             return true;
         }
 
-        private async Task<bool> SetToFilter(byte Val)
+        private async Task<bool> SetToFilter(byte deviceId, bool on)
         {
             byte[] Msg = OBDXProDevice.DVI_Set_To_Filter.GetBytes();
-            Msg[3] = Val; // DeviceId.Tool;
-            Msg[4] = 1; //on
+            Msg[3] = deviceId;
+            Msg[4] = Convert.ToByte(on);
             Msg[Msg.Length - 1] = CalcChecksum(Msg);
             await this.Port.Send(Msg);
 
@@ -812,44 +826,6 @@ namespace PcmHacking
         {
             ConfigOrTxNetwork = 0,
             RxNetwork = 1
-        }
-
-
-        private void ProcessError(ErrorType Type, byte code)
-        {
-            string ErrVal = "";
-            if (Type == ErrorType.ConfigOrTxNetwork)
-            {
-                switch (code)
-                {
-                    case (byte)ConfigurationErrors.InvalidCommand:
-                        ErrVal = "Invalid command byte received";
-                        break;
-                    case (byte)ConfigurationErrors.RecvTooLong:
-                        ErrVal = "Sent frame is larger then max allowed frame (4200)";
-                        break;
-                    case (byte)ConfigurationErrors.ByteWaitTimeout:
-                        ErrVal = "Timeout occured waiting for byte to be received from PC";
-                        break;
-                    case (byte)ConfigurationErrors.InvalidSerialChksum:
-                        ErrVal = "Invalid frame checksum sent to scantool";
-                        break;
-                    case (byte)ConfigurationErrors.SubCommandIncorrectSize:
-                        ErrVal = "Sent command had incorrect length";
-                        break;
-                    case (byte)ConfigurationErrors.InvalidSubCommand:
-                        ErrVal = "Invalid sub command detected";
-                        break;
-                    case (byte)ConfigurationErrors.SubCommandInvalidData:
-                        ErrVal = "Invalid data detected for sub command";
-                        break;
-                }
-            }
-            else if (Type == ErrorType.RxNetwork)
-            {
-
-            }
-            this.Logger.AddDebugMessage("Fault reported from scantool: " + ErrVal);
         }
 
         public override void ClearMessageBuffer()

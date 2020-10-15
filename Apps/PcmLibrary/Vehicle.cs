@@ -203,6 +203,11 @@ namespace PcmHacking
             return await this.device.ReceiveMessage();
         }
 
+        public async Task<Response<bool>> SetDeviceToListen()
+        {
+            return await device.SetToListen();
+        }
+
         /// <summary>
         /// Note that this has only been confirmed to work with ObdLink ScanTool devices.
         /// AllPro doesn't get the reply for some reason.
